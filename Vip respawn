@@ -1,0 +1,66 @@
+#include <amxmodx>
+#include <amxmisc>
+#include <hamsandwich>
+
+#define CHAT_TAG "^x04[VIP-Respawn]^x01"
+
+new bool:u[33];
+
+public plugin_init()
+{
+	register_event("HLTV", "evhltv", "a");
+	register_clcmd("say /respawn", "cmdrespawn");
+}
+
+public evhltv()
+{
+	for(new i = 0; i <= get_maxplayers(); i++)
+		u[i] = false;
+}
+
+public cmdrespawn(id) {
+	if(!(get_user_flags(id) & read_flags("t")))
+	{
+		ColorChat(id, "Nu esti un membru^x04 VIP");
+		return PLUGIN_HANDLED;
+	}
+
+	if(is_user_alive(id) || u[id])
+		return PLUGIN_HANDLED;
+
+	ColorChat(id, "Ai primit^x04 respawn^x01. Poti folosi comanda si runda viitoare!");
+	ExecuteHamB(Ham_CS_RoundRespawn, id);
+	u[id] = true;
+	return PLUGIN_CONTINUE;
+}
+
+stock ColorChat(const id, const input[], any:...)
+{
+	new strMsg[191], strFormat[191];
+	vformat(strFormat, 190, input, 3);
+	formatex(strMsg, charsmax(strMsg), "%s %s", CHAT_TAG, strFormat);
+
+	new Count = 1, Players[32];
+	get_players(Players, Count, "ch");
+
+	new strID;
+
+	if(!id)
+	{
+		for(new i = 0; i < Count; i++)
+		{
+			if(is_user_connected(Players[i]))
+				strID = Players[i];
+		}
+	}
+	else
+	{
+		if(is_user_connected(id))
+			strID = id;
+	}
+
+	message_begin(MSG_ONE_UNRELIABLE, get_user_msgid("SayText"), _, strID);
+	write_byte(strID);
+	write_string(strMsg);
+	message_end();
+}
